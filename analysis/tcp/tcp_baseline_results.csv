@@ -1,0 +1,2 @@
+Test Type,Total Bytes Sent,Total Bytes Received,Average Throughput (Mbps),Jitter (ms),Lost Packets,CPU Utilization (%)
+Baseline,"1,120,813,056","1,120,813,056",896.34,0.09,0,22.76

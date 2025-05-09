@@ -41,15 +41,15 @@ venv.bak/
 .DS_Store
 
 # Project specific
-logs/
-*.log
-analysis/output/
-*.csv
-*.dat
-*.out
-*.pid
-*.seed
-*.pid.lock
+#logs/
+#*.log
+#analysis/output/
+#*.csv
+#*.dat
+#*.out
+#*.pid
+#*.seed
+#*.pid.lock
 
 # Test and coverage
 .coverage
