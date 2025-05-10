@@ -16,7 +16,8 @@ This project is developed and maintained by Shahab Afshar.
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0000--3682--0471-A6CE39?style=flat-square&logo=ORCID&logoColor=white)](https://orcid.org/0009-0000-3682-0471)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Shahab_Afshar-0077B5?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/shahabafshar)
 
-**Professor:** [Dr. Mohamed Selim](https://scholar.google.com/citations?user=jL7iUGMAAAAJ&hl=en) [![Google Scholar](https://img.shields.io/badge/Google_Scholar-4285F4?style=flat-square&logo=google-scholar&logoColor=white)](https://scholar.google.com/citations?user=jL7iUGMAAAAJ&hl=en)
+**Professor:** [Dr. Mohamed Selim](https://scholar.google.com/citations?user=jL7iUGMAAAAJ&hl=en) [![Google Scholar](https://img.shields.io/badge/Google_Scholar-4285F4?style=flat-square&logo=google-scholar&logoColor=white)](https://scholar.google.com/citations?user=jL7iUGMAAAAJ&hl=en) 
+
 **Course:** Wireless Network Security  
 **Department:** Electrical and Computer Engineering (ECPE)  
 **University:** Iowa State University  
