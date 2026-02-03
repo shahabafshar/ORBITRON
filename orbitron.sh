@@ -25,7 +25,7 @@ check_requirements() {
     echo -e "\n${CYAN}Checking system requirements...${NC}"
     
     # Check for required commands
-    local required_commands=("ssh" "iperf3" "aireplay-ng" "iwconfig")
+    local required_commands=("ssh" "iperf3" "aireplay-ng" "iwconfig" "hostapd" "wpa_supplicant" "tmux" "iw")
     local missing_commands=()
     
     for cmd in "${required_commands[@]}"; do
@@ -107,14 +107,15 @@ show_menu() {
     echo -e "     ${YELLOW}║${NC}                   ${GREEN}ORBITRON Test Suite${NC}                    ${YELLOW}║${NC}"
     echo -e "     ${YELLOW}╠══════════════════════════════════════════════════════════╣${NC}"
     echo -e "     ${YELLOW}║${NC}  ${CYAN}1.${NC} Initialize Test Environment                          ${YELLOW}║${NC}"
-    echo -e "     ${YELLOW}║${NC}  ${CYAN}2.${NC} Run TCP Saturation Test                              ${YELLOW}║${NC}"
-    echo -e "     ${YELLOW}║${NC}  ${CYAN}3.${NC} Run UDP Saturation Test                              ${YELLOW}║${NC}"
-    echo -e "     ${YELLOW}║${NC}  ${CYAN}4.${NC} Run WiFi Jamming Test                                ${YELLOW}║${NC}"
-    echo -e "     ${YELLOW}║${NC}  ${CYAN}5.${NC} Run All Tests                                        ${YELLOW}║${NC}"
-    echo -e "     ${YELLOW}║${NC}  ${CYAN}6.${NC} View Test Results                                    ${YELLOW}║${NC}"
-    echo -e "     ${YELLOW}║${NC}  ${CYAN}7.${NC} Configure Test Parameters                            ${YELLOW}║${NC}"
-    echo -e "     ${YELLOW}║${NC}  ${CYAN}8.${NC} About ORBITRON                                       ${YELLOW}║${NC}"
-    echo -e "     ${YELLOW}║${NC}  ${CYAN}9.${NC} Exit                                                 ${YELLOW}║${NC}"
+    echo -e "     ${YELLOW}║${NC}  ${CYAN}2.${NC} Setup Nodes                                          ${YELLOW}║${NC}"
+    echo -e "     ${YELLOW}║${NC}  ${CYAN}3.${NC} Run TCP Saturation Test                              ${YELLOW}║${NC}"
+    echo -e "     ${YELLOW}║${NC}  ${CYAN}4.${NC} Run UDP Saturation Test                              ${YELLOW}║${NC}"
+    echo -e "     ${YELLOW}║${NC}  ${CYAN}5.${NC} Run WiFi Jamming Test                                ${YELLOW}║${NC}"
+    echo -e "     ${YELLOW}║${NC}  ${CYAN}6.${NC} Run All Tests                                        ${YELLOW}║${NC}"
+    echo -e "     ${YELLOW}║${NC}  ${CYAN}7.${NC} View Test Results                                    ${YELLOW}║${NC}"
+    echo -e "     ${YELLOW}║${NC}  ${CYAN}8.${NC} Configure Test Parameters                            ${YELLOW}║${NC}"
+    echo -e "     ${YELLOW}║${NC}  ${CYAN}9.${NC} About ORBITRON                                       ${YELLOW}║${NC}"
+    echo -e "     ${YELLOW}║${NC}  ${CYAN}10.${NC} Exit                                                ${YELLOW}║${NC}"
     echo -e "     ${YELLOW}╚══════════════════════════════════════════════════════════╝${NC}"
     echo -e "\n${PURPLE}Select an option:${NC} "
 }
@@ -190,6 +191,14 @@ while true; do
             initialize_environment
             ;;
         2)
+            if [ -f "setup.sh" ]; then
+                echo -e "\n${GREEN}Running Node Setup...${NC}"
+                bash setup.sh
+            else
+                echo -e "${RED}Error: setup.sh not found${NC}"
+            fi
+            ;;
+        3)
             if [ -f "run_tests.sh" ]; then
                 echo -e "\n${GREEN}Running TCP Saturation Test...${NC}"
                 bash run_tests.sh tcp
@@ -197,7 +206,7 @@ while true; do
                 echo -e "${RED}Error: run_tests.sh not found${NC}"
             fi
             ;;
-        3)
+        4)
             if [ -f "run_tests.sh" ]; then
                 echo -e "\n${GREEN}Running UDP Saturation Test...${NC}"
                 bash run_tests.sh udp
@@ -205,7 +214,7 @@ while true; do
                 echo -e "${RED}Error: run_tests.sh not found${NC}"
             fi
             ;;
-        4)
+        5)
             if [ -f "run_tests.sh" ]; then
                 echo -e "\n${GREEN}Running WiFi Jamming Test...${NC}"
                 bash run_tests.sh wifi
@@ -213,7 +222,7 @@ while true; do
                 echo -e "${RED}Error: run_tests.sh not found${NC}"
             fi
             ;;
-        5)
+        6)
             if [ -f "run_tests.sh" ]; then
                 echo -e "\n${GREEN}Running All Tests...${NC}"
                 bash run_tests.sh all
@@ -221,16 +230,16 @@ while true; do
                 echo -e "${RED}Error: run_tests.sh not found${NC}"
             fi
             ;;
-        6)
+        7)
             show_results
             ;;
-        7)
+        8)
             configure_tests
             ;;
-        8)
+        9)
             show_about
             ;;
-        9)
+        10)
             echo -e "\n${GREEN}Thank you for using ORBITRON!${NC}"
             exit 0
             ;;
@@ -239,8 +248,8 @@ while true; do
             sleep 2
             ;;
     esac
-    
-    if [ "$choice" != "6" ] && [ "$choice" != "7" ] && [ "$choice" != "8" ]; then
+
+    if [ "$choice" != "7" ] && [ "$choice" != "8" ] && [ "$choice" != "9" ]; then
         echo -e "\n${PURPLE}Press Enter to return to main menu...${NC}"
         read
     fi

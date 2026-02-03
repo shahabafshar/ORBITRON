@@ -61,30 +61,10 @@ coverage.xml
 *.cover
 .hypothesis/
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
 # Temporary files
 *.tmp
 *.bak
-*.swp
 *~
 
 # System Files
-.DS_Store
 Thumbs.db

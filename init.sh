@@ -8,16 +8,7 @@ set -e
 
 # Source configuration
 source config.sh
-
-# Function to check if node is reachable
-check_node() {
-    local hostname=$1
-    echo "Checking if $hostname is reachable..."
-    if ! ping -c 1 $hostname > /dev/null 2>&1; then
-        return 1
-    fi
-    return 0
-}
+source lib.sh
 
 # Get list of required nodes
 required_nodes=()

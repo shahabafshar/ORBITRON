@@ -45,6 +45,22 @@ This framework provides tools for testing WiFi performance and saturation on the
 - Detailed performance reports
 - User-friendly menu interface for easy operation
 
+## Running on Windows
+
+The scripts are Bash-based. On Windows you need a Bash environment:
+
+- **Option A (recommended):** Install [Git for Windows](https://git-scm.com/download/win); then in Git Bash or PowerShell run:
+  ```powershell
+  .\run.ps1
+  ```
+  or
+  ```bash
+  bash main.sh
+  ```
+- **Option B:** Use [WSL](https://docs.microsoft.com/en-us/windows/wsl/); then from WSL run `./main.sh` as on Linux.
+
+Without Git Bash or WSL, the `.sh` scripts cannot be run natively in CMD or PowerShell.
+
 ## Prerequisites
 
 1. ORBIT testbed access
@@ -56,9 +72,14 @@ This framework provides tools for testing WiFi performance and saturation on the
    - numpy
 4. Required system packages:
    - iperf3
-   - aireplay-ng
-   - iwconfig
+   - aireplay-ng (aircrack-ng suite)
+   - iw
+   - iwconfig (wireless-tools)
+   - hostapd
+   - wpa_supplicant
+   - tmux
    - ssh
+   - hping3
 
 ## Node Setup
 
@@ -75,7 +96,7 @@ Configuration is managed through `config.sh`:
 NODES=(
     ["ap"]="node1-3.outdoor.orbit-lab.org|10.1.0.17|ap|wlan0|main_network"
     ["client"]="node1-1.outdoor.orbit-lab.org|10.1.0.15|client|wlan0|main_network"
-    ["saturator"]="node1-2.outdoor.orbit.lab.org|10.1.0.16|saturator|wlan0|saturation_network"
+    ["saturator"]="node1-2.outdoor.orbit-lab.org|10.1.0.16|saturator|wlan0|main_network"
 )
 ```
 
@@ -91,14 +112,15 @@ The easiest way to use the framework is through the menu interface:
 
 The menu provides the following options:
 1. Initialize Test Environment
-2. Run TCP Saturation Test
-3. Run UDP Saturation Test
-4. Run WiFi Jamming Test
-5. Run All Tests
-6. View Test Results
-7. Configure Test Parameters
-8. About ORBITRON
-9. Exit
+2. Setup Nodes
+3. Run TCP Saturation Test
+4. Run UDP Saturation Test
+5. Run WiFi Jamming Test
+6. Run All Tests
+7. View Test Results
+8. Configure Test Parameters
+9. About ORBITRON
+10. Exit
 
 ### Manual Operation
 
@@ -122,7 +144,7 @@ For advanced users, the framework can be operated manually:
 
 4. Analyze results:
    ```bash
-   python analysis.py logs/[test_timestamp] analysis/
+   python analysis/iperf_analysis.py logs/[test_timestamp]
    ```
 
 ## Output
@@ -161,7 +183,7 @@ The analysis generates:
 4. Analysis Issues:
    - Note that analysis must be performed on a local system
    - Copy log files from the ORBIT testbed to your local machine
-   - Run analysis.py locally with the copied log files
+   - Run `python analysis/iperf_analysis.py <log_dir>` locally with the copied log files
 
 ## Contributing
 

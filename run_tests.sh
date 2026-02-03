@@ -8,21 +8,12 @@ set -e
 
 # Source configuration
 source config.sh
+source lib.sh
 
 # Create log directory
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 LOG_DIR="${LOG_DIR}/${TIMESTAMP}"
 mkdir -p "$LOG_DIR"
-
-# SSH options with shorter timeouts
-SSH_OPTS="-o ConnectTimeout=30 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-
-# Function to run SSH commands
-run_ssh_command() {
-    local hostname=$1
-    local command=$2
-    ssh $SSH_OPTS root@$hostname "$command"
-}
 
 # Function to run TCP saturation test
 run_tcp_saturation() {
@@ -41,9 +32,12 @@ run_tcp_saturation() {
     
     # Run iperf3 client
     run_ssh_command "$client_hostname" "iperf3 -c $server_ip -P 16 -t $duration -J" > "$output_file"
-    
+
     # Get server output
     run_ssh_command "$server_ip" "cat /tmp/iperf_server.json" > "$output_file.server"
+
+    # Kill iperf3 server
+    run_ssh_command "$server_ip" "pkill -f 'iperf3 -s' || true"
 }
 
 # Function to run UDP saturation test
@@ -64,9 +58,12 @@ run_udp_saturation() {
     
     # Run iperf3 client with UDP
     run_ssh_command "$client_hostname" "iperf3 -c $server_ip -p $port -u -b $rate -t $duration -J" > "$output_file"
-    
+
     # Get server output
     run_ssh_command "$server_ip" "cat /tmp/iperf_server.json" > "$output_file.server"
+
+    # Kill iperf3 server
+    run_ssh_command "$server_ip" "pkill -f 'iperf3 -s' || true"
 }
 
 # Function to run WiFi jamming test
@@ -182,26 +179,21 @@ main() {
     
     # Get AP and client nodes
     local ap_hostname=""
+    local ap_ip=""
     local client_hostname=""
     local saturator_hostname=""
     local jammer_hostname=""
     local control_hostname=""
-    
+
     for node_name in "${!NODES[@]}"; do
         IFS='|' read -r hostname ip role interface network <<< "${NODES[$node_name]}"
         case $role in
-            "ap") ap_hostname=$hostname ;;
+            "ap") ap_hostname=$hostname; ap_ip=$ip ;;
             "client") client_hostname=$hostname ;;
             "saturator") saturator_hostname=$hostname ;;
             "jammer") jammer_hostname=$hostname ;;
             "control") control_hostname=$hostname ;;
         esac
-        if [ "$node_name" = "saturator" ]; then
-            saturator_hostname=$hostname
-        fi
-        if [ "$node_name" = "control" ]; then
-            control_hostname=$hostname
-        fi
     done
 
     # Run tests
@@ -233,28 +225,34 @@ main() {
         case $test in
             "tcp")
                 echo "Running TCP Saturation Test..."
-                run_tcp_saturation "$saturator_hostname" "$ap_hostname" "$TEST_DURATION" "$test_dir" "baseline" &
+                run_tcp_saturation "$saturator_hostname" "$ap_ip" "$TEST_DURATION" "$test_dir" "baseline" &
+                local baseline_pid=$!
                 sleep 10
                 echo "Running simultaneous UDP flood using UDP saturation..."
                 for rate in {100..900..100}; do
-                    run_udp_saturation "$control_hostname" "$ap_hostname" 10 "$test_dir" 5205 "${rate}M" "flood_${rate}M"
+                    run_udp_saturation "$control_hostname" "$ap_ip" 10 "$test_dir" 5205 "${rate}M" "flood_${rate}M"
                 done
+                wait $baseline_pid || { echo "ERROR: TCP baseline test failed"; exit 1; }
                 ;;
             "udp")
                 echo "Running UDP Saturation Test..."
-                run_udp_saturation "$saturator_hostname" "$ap_hostname" "30" "$test_dir" 5202 "900M" "baseline" &
+                run_udp_saturation "$saturator_hostname" "$ap_ip" "30" "$test_dir" 5202 "900M" "baseline" &
+                local baseline_pid=$!
                 sleep 10
                 echo "Running simultaneous UDP flood using UDP saturation..."
                 for rate in {100..900..100}; do
-                    run_udp_saturation "$control_hostname" "$ap_hostname" 10 "$test_dir" 5205 "${rate}M" "flood_${rate}M"
+                    run_udp_saturation "$control_hostname" "$ap_ip" 10 "$test_dir" 5205 "${rate}M" "flood_${rate}M"
                 done
+                wait $baseline_pid || { echo "ERROR: UDP baseline test failed"; exit 1; }
                 ;;
             "wifi")
                 echo "Running WiFi Jamming Test..."
-                run_tcp_saturation "$saturator_hostname" "$ap_hostname" "$TEST_DURATION" "$test_dir" "baseline" &
+                run_tcp_saturation "$saturator_hostname" "$ap_ip" "$TEST_DURATION" "$test_dir" "baseline" &
+                local baseline_pid=$!
                 sleep 30
                 jam_duration=$((TEST_DURATION - 30))
                 run_wifi_jamming "$jammer_hostname" "1" "$jam_duration" "$test_dir"
+                wait $baseline_pid || { echo "ERROR: WiFi baseline test failed"; exit 1; }
                 ;;
         esac
     done

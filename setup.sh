@@ -8,24 +8,7 @@ set -e
 
 # Source configuration
 source config.sh
-
-# SSH options for more reliable connections
-SSH_OPTS="-o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-
-# Function to run SSH commands with proper options
-run_ssh_command() {
-    local hostname=$1
-    local command=$2
-    ssh $SSH_OPTS root@$hostname "$command"
-}
-
-# Function to copy files via SCP with proper options
-run_scp_command() {
-    local source=$1
-    local hostname=$2
-    local destination=$3
-    scp $SSH_OPTS "$source" "root@$hostname:$destination"
-}
+source lib.sh
 
 # Function to install required packages
 install_packages() {
@@ -37,7 +20,7 @@ install_packages() {
     
     # Install packages with retries
     for i in {1..3}; do
-        if run_ssh_command "$hostname" "DEBIAN_FRONTEND=noninteractive apt-get install -y iperf3 hostapd wpasupplicant tmux hping3"; then
+        if run_ssh_command "$hostname" "DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y iperf3 hostapd wpasupplicant tmux hping3"; then
             return 0
         fi
         echo "Attempt $i failed, retrying in 5 seconds..."
@@ -55,28 +38,17 @@ cleanup_node() {
     echo "Cleaning up $hostname..."
     echo "================================================"
     # Kill any existing processes
-    ssh root@$hostname "pkill -f hostapd || true; \
+    run_ssh_command "$hostname" "pkill -f hostapd || true; \
                        pkill -f wpa_supplicant || true; \
                        pkill -f mdk3 || true; \
                        pkill -f aireplay-ng || true" || echo "Warning: Cleanup failed on $hostname"
     echo "================================================"
     # Reset interface and remove IP
-    ssh root@$hostname "ip link set $interface down || true; \
+    run_ssh_command "$hostname" "ip link set $interface down || true; \
                        ip addr flush dev $interface || true; \
                        pkill -f wpa_supplicant || true; \
                        pkill -f hostapd || true; \
                        pkill -f dhclient || true" || echo "Warning: Interface reset failed on $hostname"
-}
-
-# Function to check if node is reachable
-check_node() {
-    local hostname=$1
-    echo "Checking if $hostname is reachable..."
-    if ! ping -c 1 $hostname > /dev/null 2>&1; then
-        echo "Error: Cannot reach $hostname"
-        return 1
-    fi
-    return 0
 }
 
 # Function to setup AP node
@@ -94,8 +66,10 @@ setup_ap() {
     # Get network config
     IFS='|' read -r ssid password channel hw_mode auth_algs wpa wpa_key_mgmt wpa_pairwise rsn_pairwise <<< "${NETWORKS[$network]}"
     
-    # Create hostapd config
-    cat > hostapd.conf << EOF
+    # Create hostapd config in a temp file
+    local tmpconf
+    tmpconf=$(mktemp)
+    cat > "$tmpconf" << EOF
 interface=$interface
 driver=nl80211
 ssid=$ssid
@@ -111,7 +85,8 @@ EOF
 
     # Copy config and setup AP
     echo "Copying hostapd config to $hostname..."
-    run_scp_command "hostapd.conf" "$hostname" "/root/hostapd.conf" || { echo "Error: Failed to copy config to $hostname"; return 1; }
+    run_scp_command "$tmpconf" "$hostname" "/root/hostapd.conf" || { rm -f "$tmpconf"; echo "Error: Failed to copy config to $hostname"; return 1; }
+    rm -f "$tmpconf"
     
     echo "Starting hostapd on $hostname..."
     run_ssh_command "$hostname" "ip link set $interface down && \
@@ -148,11 +123,11 @@ setup_client() {
     
     # Generate wpa_supplicant config using wpa_passphrase
     echo "Generating wpa_supplicant config on $hostname..."
-    ssh root@$hostname "wpa_passphrase '$ssid' '$password' > /root/wpa.conf" || { echo "Error: Failed to generate wpa config on $hostname"; return 1; }
-    
+    run_ssh_command "$hostname" "wpa_passphrase '$ssid' '$password' > /root/wpa.conf" || { echo "Error: Failed to generate wpa config on $hostname"; return 1; }
+
     # Setup client
     echo "Starting wpa_supplicant on $hostname..."
-    ssh root@$hostname "ip link set $interface up && \
+    run_ssh_command "$hostname" "ip link set $interface up && \
                        ip addr flush dev $interface && \
                        iw dev $interface set type managed && \
                        wpa_supplicant -i$interface -c/root/wpa.conf -B && \
@@ -171,7 +146,7 @@ setup_saturator() {
     local network=$4
 
     echo "Setting up saturator on $hostname..."
-    setup_ap "$hostname" "$ip" "$interface" "$network"
+    setup_client "$hostname" "$ip" "$interface" "$network"
 }
 
 # Function to setup jammer node
@@ -185,7 +160,7 @@ setup_jammer() {
     check_node "$hostname" || return 1
     
     # Set interface to monitor mode
-    ssh root@$hostname "ip link set $interface down && \
+    run_ssh_command "$hostname" "ip link set $interface down && \
                        ip addr flush dev $interface && \
                        airmon-ng start $interface" || { echo "Error: Failed to setup jammer on $hostname"; return 1; }
 }
